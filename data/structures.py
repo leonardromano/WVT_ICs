@@ -16,8 +16,8 @@ class particle_data():
     def __init__(self, ID):
         self.position      = zeros(NDIM, dtype = int)
         self.velocity      = zeros(NDIM)
+        self.delta         = zeros(NDIM)
         self.ID            = ID
-        self.Type          = 0
         
         self.neighbors     = list()
         self.Redistributed = 0
@@ -27,7 +27,7 @@ class particle_data():
         self.Rho           = 0
         self.Pressure      = 0
         self.Hsml          = 0
-        self.VarHsmlFac    = 0
+        self.Hwvt          = 0
         self.Rho_Model     = 0
         
 class problem():

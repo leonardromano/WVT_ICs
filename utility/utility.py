@@ -21,7 +21,7 @@ def factorial(n):
 
 def relative_density_error_with_sign(particle, Problem, Functions):
     rhoModel = Functions.Density_func(particle, Problem, BiasCorrection)
-    return (particle.Rho - rhoModel)/rhoModel
+    return (particle.Rho/rhoModel - 1)
 
 def relative_density_error(particle, Problem, Functions):
     return abs(relative_density_error_with_sign(particle, Problem, Functions))

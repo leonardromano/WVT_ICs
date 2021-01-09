@@ -73,6 +73,43 @@ def Rayleigh_Taylor_Instability_Position(particle):
     return out
 ##########################################################################
 ##########################################################################
+
+#constant ################################################################
+##########################################################################
+
+def setup_constant(Problem, Functions):
+    "setup problem and functions for Rayleigh-Taylor problem (DIM = 2)"
+    Problem.Boxsize[0]      = 1.
+    Problem.Boxsize[1]      = 1.
+    Problem.update_int_conversion()
+    Problem.Mpart           = 1./Npart
+    
+    Problem.Rho_Max         = 1.
+    Functions.Density_func  = constant_Density
+    Functions.Entropy_func  = constant_Entropy
+    Functions.Velocity_func = constant_Velocity
+    Functions.Position_func = constant_Position
+
+def constant_Density(particle, problem, bias):
+    "A constant density"
+    return 1.
+
+
+def constant_Entropy(particle, problem):
+    "Constant entropy"
+    return 1.
+
+def constant_Velocity(particle, problem):
+    "No initial motion"
+    return zeros(2)
+
+def constant_Position(particle):
+    out = zeros(2, dtype = int)
+    out[0] += int(uniform() * (1 << BITS_FOR_POSITIONS))
+    out[1] += int(uniform() * (1 << BITS_FOR_POSITIONS))
+    return out
+##########################################################################
+##########################################################################
     
     
     

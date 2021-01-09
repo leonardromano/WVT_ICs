@@ -13,7 +13,7 @@ Created on Sat Jan  2 14:56:12 2021
 #output directory
 output   = "../ICs/WVT_ICs/" 
 #Number of particles
-Npart   = 500
+Npart   = 1600
 #save a snapshot after each step
 SAVE_WVT_STEPS = True
 ####################################################################
@@ -21,7 +21,7 @@ SAVE_WVT_STEPS = True
 #WVT Force & convergence parameter
 ####################################################################
 #inversely proportional to the stepsize of the WVT-"force"
-MpsFraction = 0.1
+MpsFraction = 1.
 #Factor by which the stepsize is decreased whenever it is decreased
 StepReduction = 0.95
 #Convergence limit for large steps
@@ -39,9 +39,9 @@ Maxiter = 512
 #Redistribution parameters
 #####################################################################
 #Which fraction should at least be redistributed?
-MoveFractionMin = 0.01
+MoveFractionMin = 0.001
 #Which fraction should at most be redistributed?
-MoveFractionMax = 0.01
+MoveFractionMax = 0.1
 #Which fraction should be probed during redistribution step?
 ProbesFraction  = 0.1
 #How often should we redistribute (e.g. all x iterations)

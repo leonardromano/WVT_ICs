@@ -8,7 +8,6 @@ Created on Sun Jan  3 14:41:23 2021
 from math import erf
 from numpy import log, exp
 from numpy.random import uniform
-from time import time
 
 from Parameters.parameter import Npart, NDIM, LastMoveStep, \
     RedistributionFrequency, MoveFractionMin, MoveFractionMax, \

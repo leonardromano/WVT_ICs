@@ -51,6 +51,9 @@ def regularise_particles(Particles, Problem, Functions):
     
     while(niter <= Maxiter):
         #build the search tree and update SPH quantities
+        
+        
+        
         NgbTree = ngbtree(Particles, Problem)
         find_sph_quantities(Particles, Problem, Functions, NgbTree, niter)
         niter += 1
@@ -71,14 +74,13 @@ def regularise_particles(Particles, Problem, Functions):
         err_last  = err_mean
         
         #Now compute the sph volume and hsml weights
-        hsml = compute_wvt_weights(Particles, Problem, Functions, avg_boxsize)
+        compute_wvt_weights(Particles, Problem, Functions, avg_boxsize)
         
         #now compute the forces
-        delta = compute_wvt_forces(Particles, Problem, Functions, \
-                                   NgbTree, hsml, step)
+        compute_wvt_forces(Particles, Problem, Functions, \
+                                   NgbTree, step)
         #now drift all particles
-        cnts = drift_particles(Particles, Problem, delta)
-
+        cnts = drift_particles(Particles, Problem)
         #now some diagnostics
         move_Mps = cnts * 100/Npart
         print("        Del %g > Dmps; %g > Dmps/10; %g > Dmps/100; %g > Dmps/1000\n"\
@@ -88,7 +90,7 @@ def regularise_particles(Particles, Problem, Functions):
                 print("WARNING: A lot of initial movement detected." )
                 print("Consider increasing MpsFraction in the parameter file!\n")
                 exit()
-        write_diagnostics(niter, delta, err_diff, move_Mps, \
+        write_diagnostics(niter, err_diff, move_Mps, \
                           array([err_min, err_max, err_mean, err_sigma]))
         
         #check whether we're done

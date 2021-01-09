@@ -30,7 +30,9 @@ def setup_problem():
     Prob  = problem()
     Funcs = functions() 
     Prob.name = Problem_Specifier
-    if Prob.name == "Rayleigh-Taylor":
+    if Prob.name == "constant":
+        problems.setup_constant(Prob, Funcs)
+    elif Prob.name == "Rayleigh-Taylor":
         problems.setup_Rayleigh_Taylor(Prob, Funcs)
     else:
         print("Problem not yet implemented (NYI).")

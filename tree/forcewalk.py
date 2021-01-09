@@ -11,11 +11,11 @@ from data.structures import particle_data
 from utility.integer_coordinates import get_distance_vector, \
     convert_to_phys_position
 from numpy.linalg import norm
+from numpy import zeros
 from math import ceil
 from sys import exit
     
-def sph_density_evaluate_particle_node_opening_criterion(particle, node, \
-                                                         Problem, h):
+def evaluate_particle_node_opening_criterion(particle, node, Problem):
     """
     This function checks whether there is a spatial overlap between the 
     (rectangular) enclosing box of the particles contained in a node, 
@@ -23,20 +23,22 @@ def sph_density_evaluate_particle_node_opening_criterion(particle, node, \
     """
     if node.level <= 0:
         return 1
-    part_offset = particle.position
+    
+    part_offset  = zeros(NDIM, dtype = int)
+    part_offset += particle.position
     for i in range(NDIM):
-        part_offset[i] -= ceil(h/Problem.FacIntToCoord[i])
+        part_offset[i] -= ceil(particle.Hwvt/Problem.FacIntToCoord[i])
     left  = get_distance_vector(node.center_offset_min + node.center, \
                                 part_offset, Problem)
     right = get_distance_vector(node.center_offset_max + node.center, \
                                 part_offset, Problem)
     for i in range(NDIM):
-        if left[i] > 2 * ceil(h/Problem.FacIntToCoord[i]) and \
+        if left[i] > 2 * ceil(particle.Hwvt/Problem.FacIntToCoord[i]) and \
            right[i] > left[i]:
                return 0
     return 1
 
-def sph_density_open_node(particle, nop, NgbTree, Problem, h):
+def sph_density_open_node(particle, nop, NgbTree, Problem):
     "Continues to walk the tree for the particle by opening a node."
     p = nop.nextnode
     while p != nop.sibling:
@@ -53,11 +55,11 @@ def sph_density_open_node(particle, nop, NgbTree, Problem, h):
             node = NgbTree.get_nodep(p)
             nextp = node.sibling
             typep = "node"
-        sph_density_interact(particle, p, typep, NgbTree, Problem, h)
+        sph_density_interact(particle, p, typep, NgbTree, Problem)
         
         p = nextp
 
-def sph_density_interact(particle, no, no_type, NgbTree, Problem, h):
+def sph_density_interact(particle, no, no_type, NgbTree, Problem):
     """
     Take care of SPH density interaction between the particle, and the node
     referenced through no. The node can either be a node or a particle.
@@ -66,21 +68,20 @@ def sph_density_interact(particle, no, no_type, NgbTree, Problem, h):
         #we have a particle check whether it's a neighbor
         ngb = NgbTree.Tp[no]
         dx = get_distance_vector(particle.position, ngb.position, Problem)
-        if norm(convert_to_phys_position(dx, Problem)) > h:
+        if norm(convert_to_phys_position(dx, Problem)) > particle.Hwvt:
             return
         particle.neighbors.append([ngb, dx])
     else:
         node = NgbTree.get_nodep(no)
         if not node.notEmpty:
             return
-        if sph_density_evaluate_particle_node_opening_criterion(particle, node, \
-                                                                Problem, h):
-            sph_density_open_node(particle, node, NgbTree, Problem, h)
+        if evaluate_particle_node_opening_criterion(particle, node, Problem):
+            sph_density_open_node(particle, node, NgbTree, Problem)
                 
 
-def add_ghosts(particle, Problem, h):
+def add_ghosts(particle, Problem):
     for i in range(NDIM):
-        intHsml = ceil(h/Problem.FacIntToCoord[i])
+        intHsml = ceil(particle.Hwvt/Problem.FacIntToCoord[i])
         if not Problem.Periodic[i]:
             dist_from_wall = get_distance_from_wall(particle, i)
             if dist_from_wall < intHsml:
@@ -117,13 +118,12 @@ def mirror_particle(particle, neighbor, axis, Problem):
     of a particle close to the wall
     """
     mirrorParticle = particle_data(neighbor.ID)
-    mirrorParticle.position +=neighbor.position
+    mirrorParticle.position += neighbor.position
     mirrorParticle.position += 2*(particle.position[axis] \
                                   - neighbor.position[axis])
-    mirrorParticle.Hsml     = neighbor.Hsml
+    mirrorParticle.Hwvt     = neighbor.Hwvt
     mirrorParticle.IsGhost  = 1
-    dx = get_distance_vector(particle.position, mirrorParticle.position, \
-                                                Problem)
+    dx = get_distance_vector(particle.position, mirrorParticle.position, Problem)
     return [mirrorParticle, dx]
 
 def copy_list(oldList):
@@ -133,8 +133,8 @@ def copy_list(oldList):
         newList.append(item)
     return newList
 
-def find_neighbors(particle, Problem, NgbTree, h):
+def find_neighbors(particle, Problem, NgbTree):
     particle.neighbors = list()
-    sph_density_interact(particle, NgbTree.MaxPart, "node", NgbTree, Problem, h)
+    sph_density_interact(particle, NgbTree.MaxPart, "node", NgbTree, Problem)
     # If the particle is close to the wall we need to add ghosts
-    add_ghosts(particle, Problem, h)
+    add_ghosts(particle, Problem)

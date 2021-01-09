@@ -27,6 +27,8 @@ def evaluate_particle_node_opening_criterion(particle, node, Problem):
     """
     if node.level <= 0:
         return 1
+    
+    #compute the offset from the particle position
     part_offset  = zeros(NDIM, dtype = int)
     part_offset += particle.position
     for i in range(NDIM):
@@ -161,26 +163,10 @@ def update_smoothing_length(lowerBound, upperBound, numberOfNeighbors, particle)
             exit()
             
         if upperBound == 0 and lowerBound>0:
-            if abs(numberOfNeighbors - DESNNGB) < 0.5 * DESNNGB:
-                fac = 1-(numberOfNeighbors - DESNNGB)/numberOfNeighbors/NDIM*\
-                    particle.VarHsmlFac
-                if fac < 1.26:
-                    particle.Hsml *= fac
-                else:
-                    particle.Hsml *= 1.26
-            else:
-                particle.Hsml *= 1.26
+            particle.Hsml *= 1.26
                     
         if upperBound > 0 and lowerBound  == 0:
-            if abs(numberOfNeighbors - DESNNGB) < 0.5*DESNNGB:
-                fac = 1-(numberOfNeighbors - DESNNGB)/numberOfNeighbors/NDIM*\
-                    particle.VarHsmlFac
-                if fac > 1/1.26:
-                    particle.Hsml *= fac
-                else:
-                    particle.Hsml /= 1.26
-            else:
-                particle.Hsml /= 1.26
+            particle.Hsml /= 1.26
 
 ###############################################################################
 #ghost particle related functions           
@@ -247,19 +233,13 @@ def copy_list(oldList):
 def evaluate_kernel(particle, Problem):
     "Perform the neighbor sum to compute density and SPH correction factor"
     for [neighbor, intDistance] in particle.neighbors:
-        dist = norm(convert_to_phys_position(intDistance, Problem))
-        particle.Rho +=  kernel(dist/particle.Hsml, particle.Hsml)
-        particle.VarHsmlFac -= dist * \
-            kernel(dist/particle.Hsml, particle.Hsml, True)
+        h = particle.Hsml
+        r = norm(convert_to_phys_position(intDistance, Problem))
+        particle.Rho +=  kernel(r/h, h)
             
 def finish_density_update(particle, Problem):
     "some final postprocessing steps in density calculation"
     if particle.Rho > 0:
         wendland_bias_correction(particle)
-        #now if we have more than one neighbor update the dhsml factor
-        if particle.VarHsmlFac > 0:
-            particle.VarHsmlFac = NDIM * particle.Rho/particle.VarHsmlFac
-        else:
-            particle.VarHsmlFac = 1
         particle.Rho *= Problem.Mpart
 

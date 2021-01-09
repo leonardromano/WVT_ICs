@@ -6,10 +6,10 @@ Created on Mon Jan  4 11:39:15 2021
 @author: leonard
 """
 #public libraries
-from numpy import zeros
+from numpy import zeros, log
 from numpy.linalg import norm
 #custom libraries
-from Parameters.parameter import BiasCorrection, NDIM, Npart
+from Parameters.parameter import BiasCorrection, NDIM
 from Parameters.constants import DESNNGB, NORM_COEFF
 from tree.forcewalk import find_neighbors
 from utility.integer_coordinates import convert_to_phys_position
@@ -19,38 +19,43 @@ from sph.Kernel import kernel
 def compute_wvt_weights(Particles, Problem, Functions, avg_boxsize):
     "In this function the weights of the WVT are computed"
     v_sph_sum = 0
-    hsml  = zeros(Npart)
     for particle in Particles:
         rho = Functions.Density_func(particle, Problem, BiasCorrection)
         particle.Rho_Model = rho
-        hsml[particle.ID]  = (DESNNGB * Problem.Mpart / rho / NORM_COEFF)**(1/NDIM)
-        v_sph_sum         += hsml[particle.ID]**NDIM
-    norm_hsml = avg_boxsize * (DESNNGB / v_sph_sum / NORM_COEFF)**(1/NDIM)
-    hsml *= norm_hsml
-    return hsml
+        particle.Hwvt  = (DESNNGB * Problem.Mpart / rho / NORM_COEFF)**(1/NDIM)
+        v_sph_sum     += particle.Hwvt**NDIM
+    norm_hwvt = avg_boxsize * (DESNNGB / v_sph_sum / NORM_COEFF)**(1/NDIM)
+    #now normalise
+    for particle in Particles:
+        particle.Hwvt *= norm_hwvt
 
-def compute_wvt_forces(Particles, Problem, Functions, NgbTree, hsml, step):
+def compute_wvt_forces(Particles, Problem, Functions, NgbTree, step):
     "In this function the WVT-forces are computed"
-    delta = zeros((Npart, NDIM))
     for particle in Particles:
         p   = particle.ID
+        particle.delta = zeros(NDIM)
         err = relative_density_error(particle, Problem, Functions)
         delta_fac = err/(1 + err)
         #see if we even need to update the list of neighbors
-        if particle.Hsml < hsml[p]:
-            find_neighbors(particle, Problem, NgbTree, hsml[p])
+        if particle.Hsml < particle.Hwvt:
+            find_neighbors(particle, Problem, NgbTree)
         #now add contributions for all neighbors
         for [neighbor, intDistance] in particle.neighbors:
             n = neighbor.ID
-            if p == n or neighbor.IsGhost:
+            if p == n:
                 continue
+            if neighbor.IsGhost:
+                #if we have a ghost need to make sure Hwvt has the right value
+                neighbor.Hwvt = Particles[n].Hwvt
             dist = convert_to_phys_position(intDistance, Problem)
             r = norm(dist)
-            h    = 0.5 * (hsml[p] + hsml[n])
+            h    = 0.5 * (particle.Hwvt + neighbor.Hwvt)
             if r > h:
                 continue
-            wk = kernel(r/h, h) * h**NDIM
-            delta[p] += h * wk * dist / r
+            if NDIM == 1:
+                wk = log(r/h + 1e-3)
+            else:
+                wk = (r/h + 1e-3)**(-(NDIM-1))
+            particle.delta += h * wk * dist / r
         #reduce stepsize for particles with small error
-        delta[p] *= step * delta_fac
-    return delta
+        particle.delta *= step * delta_fac

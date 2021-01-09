@@ -9,24 +9,22 @@ import h5py
 from numpy import zeros
 
 from Parameters.parameter import output, Npart, NDIM
-from utility.errors import compute_field_stats
 from utility.integer_coordinates import convert_to_phys_position
 
-def write_diagnostics(niter, delta, err_diff, move_Mps, err_quad):
-    "iteration err_min err_max err_mean err_sigma err_diff move_Mps[4] s_delta[4]"
-    s_delta = compute_field_stats(delta)
+def write_diagnostics(niter, err_diff, move_Mps, err_quad):
+    "iteration err_min err_max err_mean err_sigma err_diff move_Mps[4]"
     #write to file
     if niter == 1:
         file = open(output + "diagnostics.log", "w")
     else:
         file = open(output + "diagnostics.log", "a")
-    file.write("%03d %g %g %g %g %g %g %g %g %g %g %g %g %g\n"\
-               %(niter, *err_quad, err_diff, *move_Mps, *s_delta))
+    file.write("%03d %g %g %g %g %g %g %g %g %g\n"\
+               %(niter, *err_quad, err_diff, *move_Mps))
     file.close()
 
 def write_step_file(Particles, Problem, niter):
     "writes all the particle data in a hdf5 file."
-    f = h5py.File("%s/stepfiles/step_%03d.hdf5"%(output, niter), "w")
+    f = h5py.File("%sstepfiles/step_%03d.hdf5"%(output, niter), "w")
     #first dump all the header info
     header = f.create_group("Header")
     h_att = header.attrs
