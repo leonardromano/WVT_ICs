@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Jan  4 14:54:12 2021
+
+@author: leonard
+"""
+import h5py
+from numpy import zeros
+
+from Parameters.parameter import output, Npart, NDIM
+from utility.integer_coordinates import convert_to_phys_position
+
+
+def write_output(Particles, Problem, Functions):
+    "writes all the particle data in a hdf5 file."
+    f = h5py.File("%s%s.hdf5"%(output, Problem.name), "w")
+    #first dump all the header info
+    header = f.create_group("Header")
+    h_att = header.attrs
+    h_att.create("NumPart", Npart)
+    h_att.create("Mpart", Problem.Mpart)
+    h_att.create("Boxsize", Problem.Boxsize)
+    h_att.create("NDIM", NDIM)
+    #now make the data sets for the particle data
+    IDs        = zeros((Npart), dtype = int)
+    positions  = zeros((Npart, NDIM), dtype = float)
+    velocities = zeros((Npart, NDIM), dtype = float)
+    densities  = zeros((Npart), dtype = float)
+    hsml       = zeros((Npart), dtype = float)
+    pressures  = zeros((Npart), dtype = float)
+    entropies  = zeros((Npart), dtype = float)
+    for i in range(Npart):
+        IDs[i]        += Particles[i].ID
+        positions[i]  += convert_to_phys_position(Particles[i].position, Problem)
+        velocities[i] += Particles[i].velocity
+        densities[i]  += Particles[i].Rho
+        hsml[i]       += Particles[i].Hsml
+        pressures[i]  += Particles[i].Pressure
+        entropies[i]  += Particles[i].Entropy
+    f.create_dataset("PartData/IDs", data = IDs,  dtype = "u4")
+    f.create_dataset("PartData/Coordinates", data = positions, dtype = "f4")
+    f.create_dataset("PartData/Velocity", data = velocities, dtype = "f4")
+    f.create_dataset("PartData/Entropy", data = entropies, dtype = "f4")
+    f.create_dataset("PartData/Density", data = densities, dtype = "f4")
+    f.create_dataset("PartData/Pressure", data = pressures, dtype = "f4")
+    f.create_dataset("PartData/SmoothingLength", data = hsml, dtype = "f4")
+    f.close()
