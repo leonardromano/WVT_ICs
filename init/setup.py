@@ -14,9 +14,7 @@ import init.problems as problems
 def setup():
     "Initialize list of particles, problem and determine particle mass"
     #first make a list of all particles
-    Particles = list()
-    for i in range(Npart):
-        Particles.append(particle_data(i))
+    Particles = [particle_data(i) for i in range(Npart)]
     Prob, Funcs = setup_problem()
     print("Problem %s\n"%(Prob.name) + \
           "   Npart: %d \n"%Npart + \

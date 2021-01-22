@@ -5,16 +5,18 @@ Created on Sun Jan  3 13:29:49 2021
 
 @author: leonard
 """
+from numpy import zeros
+from math import ceil
+from sys import exit
+
 from Parameters.constants import DESNNGB, NNGBDEV, BITS_FOR_POSITIONS, NORM_COEFF
 from Parameters.parameter import NDIM
 from sph.Kernel import kernel, wendland_bias_correction
 from data.structures import particle_data
 from utility.integer_coordinates import get_distance_vector, \
     convert_to_phys_position
-from numpy.linalg import norm
-from numpy import zeros
-from math import ceil
-from sys import exit
+from utility.utility import norm
+
 
 ###############################################################################
 #Treewalk related functions
@@ -147,8 +149,7 @@ def update_bounds(lowerBound, upperBound, numberOfNeighbors, h):
         lowerBound = max(lowerBound, h)
     else:
         if upperBound != 0:
-            if h < upperBound:
-                upperBound = h
+            upperBound = min(h, upperBound)
         else:
             upperBound = h
     return lowerBound, upperBound
@@ -162,7 +163,7 @@ def update_smoothing_length(lowerBound, upperBound, numberOfNeighbors, particle)
             print("Upper and Lower bounds not updated!")
             exit()
             
-        if upperBound == 0 and lowerBound>0:
+        if upperBound == 0 and lowerBound > 0:
             particle.Hsml *= 1.26
                     
         if upperBound > 0 and lowerBound  == 0:
@@ -242,4 +243,3 @@ def finish_density_update(particle, Problem):
     if particle.Rho > 0:
         wendland_bias_correction(particle)
         particle.Rho *= Problem.Mpart
-

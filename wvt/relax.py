@@ -51,9 +51,6 @@ def regularise_particles(Particles, Problem, Functions):
     
     while(niter <= Maxiter):
         #build the search tree and update SPH quantities
-        
-        
-        
         NgbTree = ngbtree(Particles, Problem)
         find_sph_quantities(Particles, Problem, Functions, NgbTree, niter)
         niter += 1

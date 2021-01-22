@@ -6,14 +6,17 @@ Created on Mon Jan  4 12:15:01 2021
 @author: leonard
 """
 from numpy import zeros
-from numpy.linalg import norm
+from time import time
 
 from Parameters.parameter import NDIM
 from Parameters.constants import DESNNGB, NORM_COEFF, BITS_FOR_POSITIONS, MAX_INT
 from utility.integer_coordinates import convert_to_int_position
+from utility.utility import norm
 
 def drift_particles(Particles, Problem):
     "In this function the particles are drifted according to their WVT forces"
+    t0 = time()
+    
     cnts = zeros(4, dtype = int)
     for particle in Particles:
         d = norm(particle.delta)
@@ -23,6 +26,9 @@ def drift_particles(Particles, Problem):
                 cnts[i] += 1
         particle.position += convert_to_int_position(particle.delta, Problem)
         keep_inside_box(particle, Problem)
+        
+    t1 = time()
+    Problem.Timer["WVT"] += t1 - t0
     return cnts
         
 

@@ -38,6 +38,13 @@ class problem():
         self.FacIntToCoord = self.Boxsize/(1 << BITS_FOR_POSITIONS)
         self.Rho_Max       = 1.
         self.Periodic      = ones(NDIM, dtype = int)
+        self.Timer         = {"INIT" : 0,
+                              "TREE": 0,
+                              "DENSITY": 0,
+                              "L1-ERROR": 0,
+                              "WVT": 0,
+                              "REDIST": 0,
+                              "OUTPUT": 0}
 
     def update_int_conversion(self):
         self.FacIntToCoord = self.Boxsize/(1 << BITS_FOR_POSITIONS)

@@ -7,6 +7,7 @@ Created on Mon Jan  4 14:54:12 2021
 """
 import h5py
 from numpy import zeros
+from time import time
 
 from Parameters.parameter import output, Npart, NDIM
 from utility.integer_coordinates import convert_to_phys_position
@@ -14,6 +15,9 @@ from utility.integer_coordinates import convert_to_phys_position
 
 def write_output(Particles, Problem, Functions):
     "writes all the particle data in a hdf5 file."
+    print("OUTPUT: Writing results to file...")
+    t0 = time()
+    
     f = h5py.File("%s%s.hdf5"%(output, Problem.name), "w")
     #first dump all the header info
     header = f.create_group("Header")
@@ -46,3 +50,7 @@ def write_output(Particles, Problem, Functions):
     f.create_dataset("PartData/Pressure", data = pressures, dtype = "f4")
     f.create_dataset("PartData/SmoothingLength", data = hsml, dtype = "f4")
     f.close()
+    
+    t1 = time()
+    print("OUTPUT: Finished writing output file.\nTook %g seconds.\n"%(t1-t0))
+    Problem.Timer["OUTPUT"] += t1 - t0

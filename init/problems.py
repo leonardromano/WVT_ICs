@@ -31,7 +31,6 @@ def setup_Rayleigh_Taylor(Problem, Functions):
 def Rayleigh_Taylor_Instability_Density(particle, problem, bias):
     "A step function in y direction"
     y = particle.position[1]/(1 << BITS_FOR_POSITIONS)
-    #Total Mass should be 0.75
     return 1. + 1. / (1. + exp(- (y - 0.5)/0.025)) 
 
 """  Initial pressure is assigned to produce Hydrostatic Equilibrium with a

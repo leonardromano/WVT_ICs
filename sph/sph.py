@@ -5,15 +5,21 @@ Created on Sun Jan  3 12:59:39 2021
 
 @author: leonard
 """
+from time import time
+
 from tree.treewalk import density
 from Parameters.constants import DESNNGB, BITS_FOR_POSITIONS, NORM_COEFF
 from Parameters.parameter import NDIM
 
 def find_sph_quantities(Particles, Problem, Functions, NgbTree, niter):
+    t0 = time() 
     if niter == 0:
         initial_guess_hsml(Particles, NgbTree, Problem)
     #now walk the tree to determine the weights and sph-quantities
     density(Particles, NgbTree, Problem)
+    
+    t1 = time()
+    Problem.Timer["DENSITY"] += t1 - t0
 
 def initial_guess_hsml(Particles, NgbTree, Problem):
     "computes an initial guess for the smoothing lengths"

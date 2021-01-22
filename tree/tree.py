@@ -5,19 +5,21 @@ Created on Sun Jan  3 12:50:23 2021
 
 @author: leonard
 """
+from numpy import ones, zeros, empty
+from time import time
+from sys import exit
+
 from Parameters.constants import BITS_FOR_POSITIONS, MAX_INT, \
                                  TREE_NUM_BEFORE_NODESPLIT
 from Parameters.parameter import NDIM
-import numpy as np
-from sys import exit
 
 class ngbnode():
     "A structure for node data"
     def __init__(self):
         #By default initialize the root node
         self.center   =  (1 << (BITS_FOR_POSITIONS - 1)) * \
-                         np.ones(NDIM, dtype = int)     #The center of the node
-        self.level    =  0                             #A useful way to store the sidelength of the node
+            ones(NDIM, dtype = int)             #The center of the node
+        self.level    =  0                      #A useful way to store the sidelength of the node
         
         #refernce information to other nodes
         self.sibling  = -1                          
@@ -35,6 +37,7 @@ class ngbtree():
     "A neighbor search tree"
     def __init__(self, particles, problem):
         #List of particles
+        t0 = time()
         N = len(particles)
         if N == 0:
             print("There are no particles!\n")
@@ -43,10 +46,9 @@ class ngbtree():
         self.Tp          = particles  
         self.problem     = problem                   
 
-        self.Father      = np.empty(N, dtype = int)
-        self.Nextnode    = np.empty(N + 2, dtype = int)
+        self.Father      = empty(N, dtype = int)
+        self.Nextnode    = empty(N + 2, dtype = int)
         self.Nodes       = list()
-        #np.empty(N + 1 + N + 100, dtype = ngbnode)
         
         #data for referencing nodes/particles
         self.MaxPart              = N
@@ -56,6 +58,8 @@ class ngbtree():
         
         #Now build the tree
         self.treebuild()
+        t1 = time()
+        problem.Timer["TREE"] += t1 - t0
         
     def get_nodep(self, no):
         return self.Nodes[no-self.MaxPart]
@@ -74,9 +78,9 @@ class ngbtree():
         mass      = 0.0
         not_empty = 0
         halflen   = 1 << (BITS_FOR_POSITIONS - 1 - nop.level)
-        center_offset_min = np.ones(NDIM, dtype = int) * (halflen -1)
+        center_offset_min = ones(NDIM, dtype = int) * (halflen -1)
         
-        center_offset_max = -halflen * np.ones(NDIM, dtype = int)
+        center_offset_max = -halflen * ones(NDIM, dtype = int)
             
         p = nop.nextnode
         while p != nop.sibling:
@@ -140,13 +144,13 @@ class ngbtree():
                   %(BITS_FOR_POSITIONS))
             exit()
         mask = 1 << (BITS_FOR_POSITIONS - 1 - level)
-        shift = np.zeros(NDIM, dtype = int)
+        shift = zeros(NDIM, dtype = int)
         for i in range(NDIM):
             shift[i] += (BITS_FOR_POSITIONS - 1 - i - level)
         
-        subcount  = np.zeros(1 << NDIM, dtype = int)
-        subnode   = np.zeros(1 << NDIM, dtype = int)
-        subintpos = np.zeros((1 << NDIM, NDIM), dtype=int)
+        subcount  = zeros(1 << NDIM, dtype = int)
+        subnode   = zeros(1 << NDIM, dtype = int)
+        subintpos = zeros((1 << NDIM, NDIM), dtype=int)
         #determine the nodes in which the particles will be put
         for i in range(num):
             p = index_list[i][0]
@@ -221,7 +225,7 @@ class ngbtree():
             if subcount[i] > TREE_NUM_BEFORE_NODESPLIT:
                 if subnode[i] < self.MaxPart + 1:
                     print("subnode[i]=%d < MaxPart=%d + 1" \
-                              %(subnode[i], self.MaxPart))
+                          %(subnode[i], self.MaxPart))
                     exit()
                 self.insert_points(subcount[i], \
                                    index_list[off : off + subcount[i]], \

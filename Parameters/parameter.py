@@ -13,7 +13,7 @@ Created on Sat Jan  2 14:56:12 2021
 #output directory
 output   = "../ICs/WVT_ICs/" 
 #Number of particles
-Npart   = 1600
+Npart   = 100
 #save a snapshot after each step
 SAVE_WVT_STEPS = True
 ####################################################################
@@ -33,7 +33,7 @@ LimitMps100 = -1
 #convergence limit for even smaller steps
 LimitMps1000 = 1
 #Maximum number of iterations
-Maxiter = 512
+Maxiter = 100
 #####################################################################
 
 #Redistribution parameters
@@ -47,7 +47,7 @@ ProbesFraction  = 0.1
 #How often should we redistribute (e.g. all x iterations)
 RedistributionFrequency = 5
 #When should the last redistribution happen?
-LastMoveStep = 256
+LastMoveStep = 50
 #####################################################################
 
 #Problem related parameters
@@ -55,7 +55,7 @@ LastMoveStep = 256
 #Density bias for density function
 BiasCorrection = 0.0
 #Number of dimensions
-NDIM    = 2
+NDIM = 2
 # The name of the problem (and of IC-file)
 Problem_Specifier = "Rayleigh-Taylor"
 #####################################################################

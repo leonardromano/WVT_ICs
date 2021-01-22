@@ -7,6 +7,7 @@ Created on Mon Jan  4 12:43:29 2021
 """
 import h5py
 from numpy import zeros
+from time import time
 
 from Parameters.parameter import output, Npart, NDIM
 from utility.integer_coordinates import convert_to_phys_position
@@ -24,6 +25,8 @@ def write_diagnostics(niter, err_diff, move_Mps, err_quad):
 
 def write_step_file(Particles, Problem, niter):
     "writes all the particle data in a hdf5 file."
+    t0 = time()
+    
     f = h5py.File("%sstepfiles/step_%03d.hdf5"%(output, niter), "w")
     #first dump all the header info
     header = f.create_group("Header")
@@ -50,3 +53,6 @@ def write_step_file(Particles, Problem, niter):
     f.create_dataset("PartData/Density", data = densities, dtype = "f4")
     f.create_dataset("PartData/SmoothingLength", data = hsml, dtype = "f4")
     f.close()
+    
+    t1 = time()
+    Problem.Timer["OUTPUT"] += t1 - t0

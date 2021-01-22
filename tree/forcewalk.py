@@ -5,15 +5,16 @@ Created on Mon Jan  4 12:00:39 2021
 
 @author: leonard
 """
+from numpy import zeros
+from math import ceil
+from sys import exit
+
 from Parameters.constants import BITS_FOR_POSITIONS
 from Parameters.parameter import NDIM
 from data.structures import particle_data
 from utility.integer_coordinates import get_distance_vector, \
     convert_to_phys_position
-from numpy.linalg import norm
-from numpy import zeros
-from math import ceil
-from sys import exit
+from utility.utility import norm
     
 def evaluate_particle_node_opening_criterion(particle, node, Problem):
     """

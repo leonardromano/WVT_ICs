@@ -30,11 +30,11 @@ TREE_NUM_BEFORE_NODESPLIT = 3
 #stuff for neighbor-search
 if NDIM == 2:
     DESNNGB = 16
-    NNGBDEV = 0.01
+    NNGBDEV = 1
     NGBMAX  = (DESNNGB*8)
 else:
     DESNNGB = 64
-    NNGBDEV = 0.05
+    NNGBDEV = 2
     NGBMAX  = (DESNNGB*8)
     
 #Volume of NDIM-Ball

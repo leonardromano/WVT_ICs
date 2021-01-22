@@ -8,6 +8,7 @@ Created on Sun Jan  3 14:41:23 2021
 from math import erf
 from numpy import log, exp
 from numpy.random import uniform
+from time import time
 
 from Parameters.parameter import Npart, NDIM, LastMoveStep, \
     RedistributionFrequency, MoveFractionMin, MoveFractionMax, \
@@ -21,6 +22,8 @@ def redistribute(Particles, Problem, Functions, NgbTree, niter):
     "If we have specified this timestep for redistribution redistribute"
     reset_redistribution_flags(Particles)
     if niter <= LastMoveStep and niter % RedistributionFrequency == 0:
+        t0 = time()
+        
         decay = log(MoveFractionMax / MoveFractionMin) \
                 / (LastMoveStep / RedistributionFrequency - 1)
         moveFraction = MoveFractionMax * \
@@ -28,6 +31,9 @@ def redistribute(Particles, Problem, Functions, NgbTree, niter):
         movePart = int(Npart * moveFraction)
         maxProbes = int(Npart * ProbesFraction * moveFraction / MoveFractionMax)
         redistribute_particles(movePart, maxProbes, Particles, Problem, Functions)
+        
+        t1 = time()
+        Problem.Timer["REDIST"] += t1 - t0
         #Now redo the SPH-neighbor-search
         NgbTree = ngbtree(Particles, Problem)
         find_sph_quantities(Particles, Problem, Functions, NgbTree, niter)

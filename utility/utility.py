@@ -5,6 +5,8 @@ Created on Sat Jan  2 17:47:28 2021
 
 @author: leonard
 """
+from numpy import sqrt
+
 from Parameters.parameter import BiasCorrection
 
 def volume(vector):
@@ -25,3 +27,9 @@ def relative_density_error_with_sign(particle, Problem, Functions):
 
 def relative_density_error(particle, Problem, Functions):
     return abs(relative_density_error_with_sign(particle, Problem, Functions))
+
+def norm(vector):
+    r = 0
+    for component in vector:
+        r += component * component
+    return sqrt(r)
