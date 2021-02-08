@@ -10,55 +10,37 @@ from numpy import zeros, log
 from time import time
 
 #custom libraries
-from Parameters.parameter import BiasCorrection, NDIM
-from Parameters.constants import DESNNGB, NORM_COEFF
-from tree.forcewalk import find_neighbors
-from utility.integer_coordinates import convert_to_phys_position
+from Parameters.parameter import NDIM
+from tree.treewalk import get_minimum_distance_from_wall, add_ghost
+from utility.integer_coordinates import get_distance_vector
 from utility.utility import relative_density_error, norm
 
-def compute_wvt_weights(Particles, Problem, Functions, avg_boxsize):
-    "In this function the weights of the WVT are computed"
-    t0 = time()
-    
-    v_sph_sum = 0
-    for particle in Particles:
-        rho = Functions.Density_func(particle, Problem, BiasCorrection)
-        particle.Rho_Model = rho
-        particle.Hwvt  = (DESNNGB * Problem.Mpart / rho / NORM_COEFF)**(1/NDIM)
-        v_sph_sum     += particle.Hwvt**NDIM
-    norm_hwvt = avg_boxsize * (DESNNGB / v_sph_sum / NORM_COEFF)**(1/NDIM)
-    #now normalise
-    for particle in Particles:
-        particle.Hwvt *= norm_hwvt
-        
-    t1 = time()
-    Problem.Timer["WVT"] += t1 - t0
 
-def compute_wvt_forces(Particles, Problem, Functions, NgbTree, step):
+def compute_wvt_forces(Particles, Problem, NgbTree, step):
     "In this function the WVT-forces are computed"
     t0 = time()
     
     for particle in Particles:
         p = particle.ID
         particle.delta = zeros(NDIM)
-        err = relative_density_error(particle, Problem, Functions)
+        err = relative_density_error(particle)
         delta_fac = err/(1 + err)
-        #see if we even need to update the list of neighbors
-        if particle.Hsml < particle.Hwvt:
-            find_neighbors(particle, Problem, NgbTree)
+        if particle.CloseToWall:
+            min_dist_from_wall = get_minimum_distance_from_wall(particle, NgbTree)
         #now add contributions for all neighbors
-        for [neighbor, intDistance] in particle.neighbors:
-            n = neighbor.ID
+        for no in particle.neighbors:
+            ngb = NgbTree.Tp[no]
+            n = ngb.ID
             if p == n:
                 continue
-            if neighbor.IsGhost:
-                #if we have a ghost need to make sure Hwvt has the right value
-                neighbor.Hwvt = Particles[n].Hwvt
-            dist = convert_to_phys_position(intDistance, Problem)
-            r = norm(dist)
-            h    = 0.5 * (particle.Hwvt + neighbor.Hwvt)
-            if r > h:
+            
+            dist = get_distance_vector(particle.position, ngb.position, NgbTree)
+            if particle.CloseToWall and add_ghost(particle, ngb, dist, \
+                                                  min_dist_from_wall, NgbTree):
+                #particle and ghost contributions cancel out
                 continue
+            r = norm(dist)
+            h    = 0.5 * (particle.Hsml + ngb.Hsml)
             if NDIM == 1:
                 wk = log(r/h + 1e-3)
             else:
@@ -66,6 +48,8 @@ def compute_wvt_forces(Particles, Problem, Functions, NgbTree, step):
             particle.delta += h * wk * dist / r
         #reduce stepsize for particles with small error
         particle.delta *= step * delta_fac
+        #reduce memory load
+        particle.neighbors = list()
         
     t1 = time()
     Problem.Timer["WVT"] += t1 - t0

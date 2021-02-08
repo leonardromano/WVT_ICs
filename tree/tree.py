@@ -11,7 +11,7 @@ from sys import exit
 
 from Parameters.constants import BITS_FOR_POSITIONS, MAX_INT, \
                                  TREE_NUM_BEFORE_NODESPLIT
-from Parameters.parameter import NDIM
+from Parameters.parameter import NDIM, Npart
 
 class ngbnode():
     "A structure for node data"
@@ -35,31 +35,30 @@ class ngbnode():
         
 class ngbtree():
     "A neighbor search tree"
-    def __init__(self, particles, problem):
+    def __init__(self, Particles, Problem):
         #List of particles
         t0 = time()
-        N = len(particles)
-        if N == 0:
-            print("There are no particles!\n")
-            exit()
         
-        self.Tp          = particles  
-        self.problem     = problem                   
+        self.Tp            = Particles
+        self.Mpart         = Problem.Mpart
+        self.FacIntToCoord = Problem.FacIntToCoord
+        self.Boxsize       = Problem.Boxsize
+        self.Periodic      = Problem.Periodic                   
 
-        self.Father      = empty(N, dtype = int)
-        self.Nextnode    = empty(N + 2, dtype = int)
+        self.Father      = empty(Npart, dtype = int)
+        self.Nextnode    = empty(Npart + 2, dtype = int)
         self.Nodes       = list()
         
         #data for referencing nodes/particles
-        self.MaxPart              = N
-        self.MaxNodes             = 1 + N + 100
+        self.MaxPart              = Npart
+        self.MaxNodes             = 1 + Npart + 100
         self.NextFreeNode         = 0
         self.FirstNonTopLevelNode = 0
         
         #Now build the tree
         self.treebuild()
         t1 = time()
-        problem.Timer["TREE"] += t1 - t0
+        Problem.Timer["TREE"] += t1 - t0
         
     def get_nodep(self, no):
         return self.Nodes[no-self.MaxPart]
@@ -90,7 +89,7 @@ class ngbtree():
                     self.update_node_recursive(p)
                 if p < self.MaxPart:
                     #particle
-                    mass += self.problem.Mpart
+                    mass += self.Mpart
                         
                     offset = self.Tp[p].position - nop.center
                     for i in range(NDIM):

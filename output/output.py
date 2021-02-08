@@ -10,10 +10,9 @@ from numpy import zeros
 from time import time
 
 from Parameters.parameter import output, Npart, NDIM
-from utility.integer_coordinates import convert_to_phys_position
 
 
-def write_output(Particles, Problem, Functions):
+def write_output(Particles, Problem):
     "writes all the particle data in a hdf5 file."
     print("OUTPUT: Writing results to file...")
     t0 = time()
@@ -36,7 +35,7 @@ def write_output(Particles, Problem, Functions):
     entropies  = zeros((Npart), dtype = float)
     for i in range(Npart):
         IDs[i]        += Particles[i].ID
-        positions[i]  += convert_to_phys_position(Particles[i].position, Problem)
+        positions[i]  += Particles[i].position * Problem.FacIntToCoord
         velocities[i] += Particles[i].velocity
         densities[i]  += Particles[i].Rho
         hsml[i]       += Particles[i].Hsml

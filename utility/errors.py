@@ -13,7 +13,7 @@ from utility.utility import relative_density_error
 from Parameters.parameter import Npart
 
 
-def compute_l1_error(Particles, Problem, Functions):
+def compute_l1_error(Particles, Problem):
     t0 = time()
     
     err_min = LARGE_NUM
@@ -21,7 +21,7 @@ def compute_l1_error(Particles, Problem, Functions):
     err_mean = 0.
     err_sigma = 0.
     for particle in Particles:
-        err        = relative_density_error(particle, Problem, Functions)
+        err        = relative_density_error(particle)
         err_min    = min(err, err_min)
         err_max    = max(err, err_max)
         err_mean  += err

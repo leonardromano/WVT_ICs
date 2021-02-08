@@ -21,14 +21,14 @@ from Parameters.constants import LARGE_NUM
 from Parameters.parameter import Npart, NDIM, Maxiter, MpsFraction, \
     StepReduction, LimitMps, LimitMps10, LimitMps100, LimitMps1000, \
     LastMoveStep, RedistributionFrequency, SAVE_WVT_STEPS
-from sph.sph import find_sph_quantities
+from sph.sph import initial_guess_hsml, find_sph_quantities
 from tree.tree import ngbtree
 from utility.errors import compute_l1_error
 from wvt.drift import drift_particles
-from wvt.forces import compute_wvt_weights, compute_wvt_forces
+from wvt.forces import compute_wvt_forces
 from wvt.redistribution import redistribute
 
-def regularise_particles(Particles, Problem, Functions):
+def regularise_particles(Particles, Problem, density_func):
     "This is the main loop of the IC making"
     print("Starting iterative SPH regularisation \n" + \
           "   Maxiter=%d, MpsFraction=%g StepReduction=%g "\
@@ -36,11 +36,6 @@ def regularise_particles(Particles, Problem, Functions):
           "LimitMps=(%g,%g,%g,%g)\n\n"\
               %(LimitMps, LimitMps10, LimitMps100, LimitMps1000))
     t0 = time()
-    #compute some necessary variables
-    avg_boxsize = 0
-    for length in Problem.Boxsize:
-        avg_boxsize += length
-    avg_boxsize /= NDIM
     
     npart_1D = Npart**(1/NDIM)
     step     = 1./(npart_1D * MpsFraction)
@@ -49,20 +44,25 @@ def regularise_particles(Particles, Problem, Functions):
     err_diff = LARGE_NUM
     niter    = 0
     
-    while(niter <= Maxiter):
+    #build the search tree and update SPH quantities
+    NgbTree   = ngbtree(Particles, Problem)
+    initial_guess_hsml(Particles, NgbTree)
+    
+    while(niter < Maxiter):
         #build the search tree and update SPH quantities
-        NgbTree = ngbtree(Particles, Problem)
-        find_sph_quantities(Particles, Problem, Functions, NgbTree, niter)
+        find_sph_quantities(Particles, Problem, NgbTree)
+        
         niter += 1
         if SAVE_WVT_STEPS:
             write_step_file(Particles, Problem, niter)
         
         #redistribute particles
-        NgbTree = redistribute(Particles, Problem, Functions, NgbTree, niter)
+        if niter <= LastMoveStep and niter % RedistributionFrequency == 0:
+            NgbTree = redistribute(Particles, Problem, NgbTree, density_func, niter)
             
         #next find minimum, maximum and average error and their variance
         err_min, err_max, \
-        err_mean, err_sigma = compute_l1_error(Particles, Problem, Functions)
+        err_mean, err_sigma = compute_l1_error(Particles, Problem)
         
         #update err_diff and err_last
         err_diff  = ( err_last - err_mean ) / err_mean
@@ -70,14 +70,11 @@ def regularise_particles(Particles, Problem, Functions):
               %(niter, err_min, err_max, err_mean, err_sigma, err_diff, step))
         err_last  = err_mean
         
-        #Now compute the sph volume and hsml weights
-        compute_wvt_weights(Particles, Problem, Functions, avg_boxsize)
-        
         #now compute the forces
-        compute_wvt_forces(Particles, Problem, Functions, \
-                                   NgbTree, step)
+        compute_wvt_forces(Particles, Problem, NgbTree, step)
         #now drift all particles
-        cnts = drift_particles(Particles, Problem)
+        cnts = drift_particles(Particles, Problem, density_func)
+        
         #now some diagnostics
         move_Mps = cnts * 100/Npart
         print("        Del %g > Dmps; %g > Dmps/10; %g > Dmps/100; %g > Dmps/1000\n"\

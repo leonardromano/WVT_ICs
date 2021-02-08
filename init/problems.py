@@ -28,10 +28,10 @@ def setup_Rayleigh_Taylor(Problem, Functions):
     Functions.Velocity_func = Rayleigh_Taylor_Instability_Velocity
     Functions.Position_func = Rayleigh_Taylor_Instability_Position
 
-def Rayleigh_Taylor_Instability_Density(particle, problem, bias):
+def Rayleigh_Taylor_Instability_Density(particle):
     "A step function in y direction"
     y = particle.position[1]/(1 << BITS_FOR_POSITIONS)
-    return 1. + 1. / (1. + exp(- (y - 0.5)/0.025)) 
+    particle.Rho_Model = 1. + 1. / (1. + exp(- (y - 0.5)/0.025)) 
 
 """  Initial pressure is assigned to produce Hydrostatic Equilibrium with a
      uniform gravitational acceleration g = -1/2 in the y-direction (at the
@@ -42,15 +42,15 @@ def Rayleigh_Taylor_Instability_Density(particle, problem, bias):
      rho F = nabla P --> dP/dy = rho g --> P = P_0 + rho g y
 """
 
-def Rayleigh_Taylor_Instability_Entropy(particle, problem):
+def Rayleigh_Taylor_Instability_Entropy(particle):
      gamma = 1.4
      rho2 = 2.0
      grav_acc = -0.5
      y = particle.position[1] / (1 << BITS_FOR_POSITIONS)
      particle.Pressure = rho2 / gamma + grav_acc *  particle.Rho * (y - 0.5)
-     return particle.Pressure * particle.Rho**(-gamma)
+     particle.Entropy = particle.Pressure * particle.Rho**(-gamma)
 
-def Rayleigh_Taylor_Instability_Velocity(particle, problem):
+def Rayleigh_Taylor_Instability_Velocity(particle):
     "Only particles in the center are moving"
     x = particle.position[0] / (1 << BITS_FOR_POSITIONS)
     y = particle.position[1] / (1 << BITS_FOR_POSITIONS)
@@ -59,7 +59,7 @@ def Rayleigh_Taylor_Instability_Velocity(particle, problem):
         #density perturbation in x-direction
         out[1] = 0.025 * (1 + cos(8 * pi * (x + 0.25))) * \
                          (1 + cos(5 * pi * (y - 0.5)))
-    return out
+    particle.velocity = out
 
 def Rayleigh_Taylor_Instability_Position(particle):
     out = zeros(2, dtype = int)
@@ -69,7 +69,7 @@ def Rayleigh_Taylor_Instability_Position(particle):
         out[1] += int(3 * r * (1 << (BITS_FOR_POSITIONS - 1)))
     else:
         out[1] += int((1 + 3 * r) * (1 << (BITS_FOR_POSITIONS - 2)))
-    return out
+    particle.position = out
 ##########################################################################
 ##########################################################################
 
@@ -89,24 +89,24 @@ def setup_constant(Problem, Functions):
     Functions.Velocity_func = constant_Velocity
     Functions.Position_func = constant_Position
 
-def constant_Density(particle, problem, bias):
+def constant_Density(particle):
     "A constant density"
-    return 1.
+    particle.Rho_Model = 1.
 
 
-def constant_Entropy(particle, problem):
+def constant_Entropy(particle):
     "Constant entropy"
-    return 1.
+    particle.Entropy = 1.
 
-def constant_Velocity(particle, problem):
+def constant_Velocity(particle):
     "No initial motion"
-    return zeros(2)
+    particle.velocity = zeros(2)
 
 def constant_Position(particle):
     out = zeros(2, dtype = int)
     out[0] += int(uniform() * (1 << BITS_FOR_POSITIONS))
     out[1] += int(uniform() * (1 << BITS_FOR_POSITIONS))
-    return out
+    particle.position = out
 ##########################################################################
 ##########################################################################
     

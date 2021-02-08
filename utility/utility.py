@@ -7,8 +7,6 @@ Created on Sat Jan  2 17:47:28 2021
 """
 from numpy import sqrt
 
-from Parameters.parameter import BiasCorrection
-
 def volume(vector):
     dV = 1
     for dx in vector:
@@ -21,12 +19,11 @@ def factorial(n):
         result *= i
     return result
 
-def relative_density_error_with_sign(particle, Problem, Functions):
-    rhoModel = Functions.Density_func(particle, Problem, BiasCorrection)
-    return (particle.Rho/rhoModel - 1)
+def relative_density_error_with_sign(particle):
+    return particle.Rho/particle.Rho_Model - 1
 
-def relative_density_error(particle, Problem, Functions):
-    return abs(relative_density_error_with_sign(particle, Problem, Functions))
+def relative_density_error(particle):
+    return abs(relative_density_error_with_sign(particle))
 
 def norm(vector):
     r = 0

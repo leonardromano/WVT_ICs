@@ -21,13 +21,12 @@ class particle_data():
         
         self.neighbors     = list()
         self.Redistributed = 0
-        self.IsGhost       = 0
+        self.CloseToWall   = 0
         
         self.Entropy       = 0 
         self.Rho           = 0
         self.Pressure      = 0
         self.Hsml          = 0
-        self.Hwvt          = 0
         self.Rho_Model     = 0
         
 class problem():

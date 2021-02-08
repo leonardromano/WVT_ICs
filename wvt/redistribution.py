@@ -18,28 +18,24 @@ from sph.sph import find_sph_quantities
 from utility.utility import relative_density_error_with_sign
 
 
-def redistribute(Particles, Problem, Functions, NgbTree, niter):
+def redistribute(Particles, Problem, NgbTree, density_func, niter):
     "If we have specified this timestep for redistribution redistribute"
-    reset_redistribution_flags(Particles)
-    if niter <= LastMoveStep and niter % RedistributionFrequency == 0:
-        t0 = time()
+    t0 = time()
         
-        decay = log(MoveFractionMax / MoveFractionMin) \
-                / (LastMoveStep / RedistributionFrequency - 1)
-        moveFraction = MoveFractionMax * \
-            exp(-decay * (niter / RedistributionFrequency - 1))
-        movePart = int(Npart * moveFraction)
-        maxProbes = int(Npart * ProbesFraction * moveFraction / MoveFractionMax)
-        redistribute_particles(movePart, maxProbes, Particles, Problem, Functions)
+    decay = log(MoveFractionMax / MoveFractionMin) / (LastMoveStep / RedistributionFrequency - 1)
+    moveFraction = MoveFractionMax * exp(-decay * (niter / RedistributionFrequency - 1))
+    movePart = int(Npart * moveFraction)
+    maxProbes = int(Npart * ProbesFraction * moveFraction / MoveFractionMax)
+    redistribute_particles(movePart, maxProbes, Particles, Problem, density_func)
         
-        t1 = time()
-        Problem.Timer["REDIST"] += t1 - t0
-        #Now redo the SPH-neighbor-search
-        NgbTree = ngbtree(Particles, Problem)
-        find_sph_quantities(Particles, Problem, Functions, NgbTree, niter)
+    t1 = time()
+    Problem.Timer["REDIST"] += t1-t0
+    #Now redo the SPH-neighbor-search
+    NgbTree = ngbtree(Particles, Problem)
+    find_sph_quantities(Particles, Problem, NgbTree)
     return NgbTree
 
-def redistribute_particles(movePart, maxProbes, Particles, Problem, Functions):
+def redistribute_particles(movePart, maxProbes, Particles, Problem, density_func):
     "Take random high density particles and put them in low density regions"
     print("Attempting to redistribute %d particles by probing %d"\
           %(movePart, maxProbes))
@@ -49,19 +45,19 @@ def redistribute_particles(movePart, maxProbes, Particles, Problem, Functions):
         if probeCounter < maxProbes:
             part_i, success_flag, probeCounter = \
                 find_particle_to_redistribute(probeCounter, maxProbes, \
-                                              Particles, Problem, Functions)
+                                              Particles)
             #only if we found a particle are we allowed to move it
             if success_flag:
                 #find a suitable partner and move our particle to its neighborhood
-                part_j = find_particle_as_target_location(Particles, Problem, \
-                                                          Functions)
-                move_particle_in_neighborhood_of(part_i, part_j, Problem)
-                redistCounter +=1
+                part_j = find_particle_as_target_location(Particles)
+                move_particle_in_neighborhood_of(part_i, part_j, Problem, \
+                                                 density_func)
+                redistCounter += 1
     print("Redistributed %d particles after probing %d particles\n"\
           %(redistCounter, probeCounter))
     
 def find_particle_to_redistribute(probeCounter, maxProbes, \
-                                  Particles, Problem, Functions):
+                                  Particles):
     "Pick random particles until we find a high density particles"
     part_i = random_particle(Particles)
     success_flag = 1
@@ -77,7 +73,7 @@ def find_particle_to_redistribute(probeCounter, maxProbes, \
             break
         probeCounter += 1
         #does it make sense to move this particle?
-        if not accept_particle_for_movement(part_i, Problem, Functions):
+        if not accept_particle_for_movement(part_i):
             part_i = random_particle(Particles)
             continue
         if part_i.Redistributed:
@@ -88,30 +84,29 @@ def find_particle_to_redistribute(probeCounter, maxProbes, \
             run = False
     return part_i, success_flag, probeCounter
 
-def find_particle_as_target_location(Particles, Problem, Functions):
+def find_particle_as_target_location(Particles):
     "Pick random particles until we have a low density one"
     part_j = random_particle(Particles)
     #suitable neighbors need to have not been moved and they should have
     #too low density yet
-    while(part_j.Redistributed or \
-          not accept_particle_as_target(part_j, Problem, Functions)):
+    while(part_j.Redistributed or not accept_particle_as_target(part_j)):
         part_j = random_particle(Particles)
     return part_j
 
-def move_particle_in_neighborhood_of(part_i, part_j, Problem):
+def move_particle_in_neighborhood_of(part_i, part_j, Problem, density_func):
     "Update position of redistributed particle"
     for i in range(NDIM):
         part_i.position[i] = position_in_proximity_of(part_j, Problem, i)
+    #now update the model density
+    density_func(part_i)
 
-def accept_particle_as_target(particle, Problem, Functions):
+def accept_particle_as_target(particle):
     "Only true if density smaller than model and some luck"
-    return uniform() < -1 * relative_density_error_with_sign(particle, \
-                                                           Problem, Functions)
+    return uniform() < -1 * relative_density_error_with_sign(particle)
 
-def accept_particle_for_movement(particle, Problem, Functions):
+def accept_particle_for_movement(particle):
     "True with a higher probability for high density particles"
-    return uniform() < erf(relative_density_error_with_sign(particle, \
-                                                            Problem, Functions))
+    return uniform() < erf(relative_density_error_with_sign(particle))
         
 def position_in_proximity_of(particle, Problem, axis):
     "Place particle within 0.3Hsml of the target particle"
@@ -129,8 +124,3 @@ def position_in_proximity_of(particle, Problem, axis):
 def random_particle(Particles):
     "Draw a random particle from the set of particles"
     return Particles[int(uniform() * (Npart - 1))]
-
-def reset_redistribution_flags(Particles):
-    "Clear all redistributed flags"
-    for particle in Particles:
-        particle.Redistributed = 0

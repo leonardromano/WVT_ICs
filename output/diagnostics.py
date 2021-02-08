@@ -10,7 +10,6 @@ from numpy import zeros
 from time import time
 
 from Parameters.parameter import output, Npart, NDIM
-from utility.integer_coordinates import convert_to_phys_position
 
 def write_diagnostics(niter, err_diff, move_Mps, err_quad):
     "iteration err_min err_max err_mean err_sigma err_diff move_Mps[4]"
@@ -43,7 +42,7 @@ def write_step_file(Particles, Problem, niter):
     hsml       = zeros((Npart), dtype = float)
     for i in range(Npart):
         IDs[i]        += Particles[i].ID
-        positions[i]  += convert_to_phys_position(Particles[i].position, Problem)
+        positions[i]  += Particles[i].position * Problem.FacIntToCoord
         velocities[i] += Particles[i].velocity
         densities[i]  += Particles[i].Rho
         hsml[i]       += Particles[i].Hsml

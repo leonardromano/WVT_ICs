@@ -13,7 +13,7 @@ from Parameters.constants import DESNNGB, NORM_COEFF, BITS_FOR_POSITIONS, MAX_IN
 from utility.integer_coordinates import convert_to_int_position
 from utility.utility import norm
 
-def drift_particles(Particles, Problem):
+def drift_particles(Particles, Problem, density_func):
     "In this function the particles are drifted according to their WVT forces"
     t0 = time()
     
@@ -24,8 +24,12 @@ def drift_particles(Particles, Problem):
         for i in range(cnts.shape[0]):
             if d > (0.1)**(i) * d_mps:
                 cnts[i] += 1
-        particle.position += convert_to_int_position(particle.delta, Problem)
+        particle.position += convert_to_int_position(particle.delta, Problem.FacIntToCoord)
         keep_inside_box(particle, Problem)
+        #now update the model density value
+        density_func(particle)
+        particle.delta = zeros(NDIM)
+        particle.Redistributed = 0
         
     t1 = time()
     Problem.Timer["WVT"] += t1 - t0

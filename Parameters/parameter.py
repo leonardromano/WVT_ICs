@@ -21,7 +21,7 @@ SAVE_WVT_STEPS = True
 #WVT Force & convergence parameter
 ####################################################################
 #inversely proportional to the stepsize of the WVT-"force"
-MpsFraction = 1.
+MpsFraction = 5.
 #Factor by which the stepsize is decreased whenever it is decreased
 StepReduction = 0.95
 #Convergence limit for large steps
@@ -52,8 +52,6 @@ LastMoveStep = 50
 
 #Problem related parameters
 #####################################################################
-#Density bias for density function
-BiasCorrection = 0.0
 #Number of dimensions
 NDIM = 2
 # The name of the problem (and of IC-file)

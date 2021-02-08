@@ -31,11 +31,9 @@ TREE_NUM_BEFORE_NODESPLIT = 3
 if NDIM == 2:
     DESNNGB = 16
     NNGBDEV = 1
-    NGBMAX  = (DESNNGB*8)
 else:
     DESNNGB = 64
     NNGBDEV = 2
-    NGBMAX  = (DESNNGB*8)
     
 #Volume of NDIM-Ball
 if NDIM % 2 == 0:
